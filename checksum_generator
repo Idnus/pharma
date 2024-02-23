@@ -1,0 +1,72 @@
+import hashlib
+import os
+from datetime import datetime
+import getpass
+import tkinter as tk
+from tkinter import filedialog, messagebox
+
+def calculate_checksums(directory):
+    checksums = []
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            file_path = os.path.join(root, file)
+            with open(file_path, 'rb') as f:
+                file_bytes = f.read()
+                checksum = hashlib.sha256(file_bytes).hexdigest()
+                checksums.append((file_path, checksum))
+    return checksums
+
+def write_report(directory1, directory2, checksums1, checksums2, report_file):
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    user_info = getpass.getuser()
+    with open(report_file, 'w') as f:
+        f.write(f"Report Time: {current_time}\nUser: {user_info}\n\n")
+        f.write(f"Directory 1: {directory1}\n--- Checksums ---\n")
+        for path, hash in checksums1:
+            f.write(f"{path} {hash}\n")
+        f.write(f"\nDirectory 2: {directory2}\n--- Checksums ---\n")
+        for path, hash in checksums2:
+            f.write(f"{path} {hash}\n")
+
+def browse_directory(entry):
+    directory = filedialog.askdirectory()
+    if directory:
+        entry.delete(0, tk.END)
+        entry.insert(0, directory)
+
+def generate_report(entry1, entry2):
+    directory1 = entry1.get()
+    directory2 = entry2.get()
+    if directory1 and directory2:
+        checksums1 = calculate_checksums(directory1)
+        checksums2 = calculate_checksums(directory2)
+        report_file = "checksum_report.txt"
+        write_report(directory1, directory2, checksums1, checksums2, report_file)
+        messagebox.showinfo("Success", f"Report generated: {report_file}")
+    else:
+        messagebox.showwarning("Warning", "Please select both directories.")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.title("Checksum Generator")
+
+    frame = tk.Frame(root)
+    frame.pack(padx=10, pady=10)
+
+    entry1 = tk.Entry(frame, width=50)
+    entry1.pack(side=tk.LEFT, padx=5, pady=5)
+    button1 = tk.Button(frame, text="Browse...", command=lambda: browse_directory(entry1))
+    button1.pack(side=tk.LEFT, padx=5, pady=5)
+
+    frame2 = tk.Frame(root)
+    frame2.pack(padx=10, pady=10)
+
+    entry2 = tk.Entry(frame2, width=50)
+    entry2.pack(side=tk.LEFT, padx=5, pady=5)
+    button2 = tk.Button(frame2, text="Browse...", command=lambda: browse_directory(entry2))
+    button2.pack(side=tk.LEFT, padx=5, pady=5)
+
+    report_button = tk.Button(root, text="Generate Report", command=lambda: generate_report(entry1, entry2))
+    report_button.pack(pady=10)
+
+    root.mainloop()
